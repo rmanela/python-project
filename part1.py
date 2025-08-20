@@ -41,21 +41,30 @@ def report_file():
     doch = []
     for sh in range(len(sheets)):
         letters = read_numeric_values_from_excel(request.json['filePath'], sheets[sh]['name'], sheets[sh]['columnLetters'])
-        sum = 0
+        total = 0
         print(letters)
-        numbers = list(filter(lambda x: int(x) != None, letters))
+        numbers = []
+        for x in letters:
+            try:
+                num = float(x)  # Use float to handle both int and decimal numbers
+                numbers.append(num)
+            except (ValueError, TypeError):
+                continue  # Skip non-numeric values
         print('numbers', numbers)
         if sheets[sh]['active'] == 'sum':
             for i in numbers:
-                sum += i
+                total += i
         else:
             index = 0
             for i in numbers:
-                sum += i
+                total += i
                 index += 1
-            sum /= index
-        doch.append({"sheetName": sheets[sh]['name'], "active": sheets[sh]['active'], "answer": sum})
-        report_pdf_file(doch)
+            if index > 0:
+                total /= index
+            else:
+                total = 0  # Handle case with no numeric values
+        doch.append({"sheetName": sheets[sh]['name'], "active": sheets[sh]['active'], "answer": total})
+    report_pdf_file(doch)
     return doch
 
 def report_pdf_file(doch):
