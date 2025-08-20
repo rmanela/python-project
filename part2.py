@@ -35,13 +35,16 @@ def sum_excel_values(file_path):
         for row in ws.iter_rows(values_only=True):
             for cell in row:
                 if cell is not None:
-                    total_sum += int(cell)
+                    try:
+                        total_sum += float(cell)  # Use float to handle both int and decimal numbers
+                    except (ValueError, TypeError):
+                        continue  # Skip non-numeric values
     return total_sum
 @app.route('/field_sum', methods=['POST'])
 def sum_of_values_field_in_excel():
     file_path = request.json['filePath']
-    sum = sum_excel_values(file_path)
-    return {'sum': sum}
+    total = sum_excel_values(file_path)
+    return {'sum': total}
 
 def plot_excel_sheets_sum(file_path):
     wb = load_workbook(file_path)
@@ -53,7 +56,10 @@ def plot_excel_sheets_sum(file_path):
         for row in ws.iter_rows(values_only=True):
             for cell in row:
                 if cell is not None:
-                    sheet_sum += int(cell)
+                    try:
+                        sheet_sum += float(cell)  # Use float to handle both int and decimal numbers
+                    except (ValueError, TypeError):
+                        continue  # Skip non-numeric values
         sums.append(sheet_sum)
         sheet_names.append(sheet)
     plt.bar(sheet_names, sums)
@@ -69,25 +75,31 @@ def plot_excel():
     plot_excel_sheets_sum(file_path)
     return {"successfully": 100}
 
-def avarage_excel_values(file_path):
+def average_excel_values(file_path):
     wb = load_workbook(file_path)
     total_sum = []
     for sheet in wb.sheetnames:
         ws = wb[sheet]
-        sum = 0
+        sheet_total = 0
         for row in ws.iter_rows(values_only=True):
             for cell in row:
                 if cell is not None:
-                    sum += int(cell)
-        total_sum.append(sum)
-    sum = 0
+                    try:
+                        sheet_total += float(cell)  # Use float to handle both int and decimal numbers
+                    except (ValueError, TypeError):
+                        continue  # Skip non-numeric values
+        total_sum.append(sheet_total)
+    overall_total = 0
     for i in total_sum:
-        sum += i
-    return sum / len(total_sum)
+        overall_total += i
+    if len(total_sum) > 0:
+        return overall_total / len(total_sum)
+    else:
+        return 0  # Handle case with no sheets
 @app.route('/average', methods=['POST'])
 def average_of_sheets():
     file_path = request.json['filePath']
-    avg = avarage_excel_values(file_path)
+    avg = average_excel_values(file_path)
     return {'average': avg}
 
 
@@ -101,7 +113,7 @@ def doch_pdf_total():
     print(names)
     sums = plot_excel_sheets_sum(file_path)['sums']
     print(sums)
-    avg = avarage_excel_values(file_path)
+    avg = average_excel_values(file_path)
     print(avg)
     obj_pdf = {
         'file_name': file_name,
